@@ -57,7 +57,15 @@ class GarminClient:
         logger.warning("Garmin is not logging in or the token has expired.")
         if self.auth_domain and str(self.auth_domain).upper() == "CN":
           self.garthClient.configure(domain="garmin.cn")
-        self.garthClient.login(self.email, self.password)
+        try:
+          self.garthClient.login(self.email, self.password)
+        except Exception as err:
+          logger.exception(
+              "Garmin login failed: %s: %s",
+              type(err).__name__,
+              err,
+          )
+          raise
         
         # del self.garthClient.sess.headers['User-Agent']
 
