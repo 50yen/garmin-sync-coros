@@ -42,18 +42,19 @@ class CorosClient:
         response = self.req.request('POST', login_url, body=login_body, headers=headers)
 
         if response.status != 200:
-    print(f"COROS login HTTP status: {response.status}")
-    print(f"COROS response content-type: {response.headers.get('Content-Type')}")
-    print(f"COROS response length: {len(response.data)}")
-    raise RuntimeError("COROS login endpoint returned a non-200 response")
+            print(f"COROS login HTTP status: {response.status}")
+            print(f"COROS response content-type: {response.headers.get('Content-Type')}")
+            print(f"COROS response length: {len(response.data)}")
+            raise RuntimeError("COROS login endpoint returned a non-200 response")
 
-try:
-    login_response = json.loads(response.data)
-except json.JSONDecodeError:
-    print(f"COROS login returned non-JSON; HTTP status: {response.status}")
-    print(f"COROS response content-type: {response.headers.get('Content-Type')}")
-    print(f"COROS response length: {len(response.data)}")
-    raise RuntimeError("COROS login endpoint returned an invalid JSON response")
+        try:
+            login_response = json.loads(response.data)
+        except json.JSONDecodeError:
+            print(f"COROS login returned non-JSON; HTTP status: {response.status}")
+            print(f"COROS response content-type: {response.headers.get('Content-Type')}")
+            print(f"COROS response length: {len(response.data)}")
+            raise RuntimeError("COROS login endpoint returned an invalid JSON response")
+
 
         login_result = login_response["result"]
         if login_result != "0000":
