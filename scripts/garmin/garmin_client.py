@@ -60,7 +60,6 @@ class GarminClient:
         self.garthClient.login(self.email, self.password)
         
         # del self.garthClient.sess.headers['User-Agent']
-        del self.garthClient.client.sess.headers['User-Agent']
 
       return func(self, *args, **kwargs)
     return ware
