@@ -57,8 +57,12 @@ if __name__ == "__main__":
   COROS_EMAIL = SYNC_CONFIG["COROS_EMAIL"]
   COROS_PASSWORD = SYNC_CONFIG["COROS_PASSWORD"]
   corosClient = CorosClient(COROS_EMAIL, COROS_PASSWORD)
+  print("DEBUG: Starting COROS login", flush=True)
   corosClient.login()
+  print("DEBUG: COROS login completed", flush=True)
+  print("DEBUG: Starting Garmin activity fetch", flush=True)
   all_activities = garminClient.getAllActivities()
+  print("DEBUG: Garmin activity fetch completed", flush=True)
   if all_activities == None or len(all_activities) == 0:
       exit()
   for activity in all_activities:
