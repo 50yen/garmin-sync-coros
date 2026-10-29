@@ -100,7 +100,7 @@ if __name__ == "__main__":
       if corosClient.regionId == 2:
          client = AliOssClient(access_token=corosClient.accessToken)
       elif corosClient.regionId == 1 or corosClient.regionId == 3:
-         client = AwsOssClient()
+         client = AwsOssClient(access_token=corosClient.accessToken)
 
       file_path = un_sync_info["file_path"]
       un_sync_id = un_sync_info["un_sync_id"]
