@@ -81,11 +81,21 @@ class GarminClient:
      
 
   ## 获取运动
-  def getActivities(self, start:int, limit:int):
-     
+  def getActivities(self, start: int, limit: int):
      params = {"start": str(start), "limit": str(limit)}
-     activities =  self.connectapi(path=GARMIN_URL_DICT["garmin_connect_activities"], params=params)
-     return activities;
+     print(f"DEBUG: Garmin API request start={start}, limit={limit}", flush=True)
+     try:
+        activities = self.connectapi(
+            path=GARMIN_URL_DICT["garmin_connect_activities"],
+            params=params
+        )
+        print(f"DEBUG: Garmin API response type={type(activities).__name__}, count={len(activities) if activities is not None else 'None'}", flush=True)
+        return activities
+     except Exception as err:
+        import traceback
+        print(f"DEBUG: Garmin API error: {type(err).__name__}: {err}", flush=True)
+        traceback.print_exc()
+        raise
 
   # ## 获取所有运动
   # def getAllActivities(self): 
