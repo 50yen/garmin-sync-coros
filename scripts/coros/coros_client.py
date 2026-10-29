@@ -122,7 +122,10 @@ class CorosClient:
           response = json.loads(response.data)
           return response
         except Exception as err:
-            exit() 
+            import traceback
+            print(f"DEBUG: COROS activity query failed: {type(err).__name__}: {err}", flush=True)
+            traceback.print_exc()
+            raise
      ## 获取所有运动
     def getAllActivities(self): 
       all_activities = []
