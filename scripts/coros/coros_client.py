@@ -101,7 +101,10 @@ class CorosClient:
           else:
              return False
         except Exception as err:
-            exit() 
+            import traceback
+            print(f"DEBUG: COROS upload failed: {type(err).__name__}: {err}", flush=True)
+            traceback.print_exc()
+            raise
 
     def getActivities(self, size:int, page:int):
         self.checkToken()
