@@ -17,7 +17,7 @@ SYNC_CONFIG = {
     'GARMIN_AUTH_DOMAIN': '',
     'GARMIN_EMAIL': '',
     'GARMIN_PASSWORD': '',
-    'GARMIN_NEWEST_NUM': 10000,
+    'GARMIN_NEWEST_NUM': 3,
     "COROS_EMAIL": '',
     "COROS_PASSWORD": '',
 }
@@ -72,7 +72,16 @@ if __name__ == "__main__":
   
 
   un_sync_id_list = garmin_db.getUnSyncActivity()
-  if un_sync_id_list == None or len(un_sync_id_list) == 0:
+  if not un_sync_id_list:
+      exit()
+
+  # Keep only the 3 newest activities returned by Garmin.
+  newest_ids = [a["activityId"] for a in all_activities[:3]]
+  newest_ids_set = set(newest_ids)
+  un_sync_id_list = [activity_id for activity_id in un_sync_id_list
+                     if activity_id in newest_ids_set]
+  print(f"DEBUG: Limiting upload to {len(un_sync_id_list)} of the 3 newest Garmin activities", flush=True)
+  if not un_sync_id_list:
       exit()
   file_path_list = []
   
