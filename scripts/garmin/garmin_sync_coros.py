@@ -110,7 +110,13 @@ if __name__ == "__main__":
       if upload_result:
           garmin_db.updateSyncStatus(un_sync_id)
     except Exception as err:
-      print(err)
+      import traceback
+      print(
+          f"DEBUG: Sync failed for activity {un_sync_id}: "
+          f"{type(err).__name__}: {err}",
+          flush=True
+      )
+      traceback.print_exc()
       garmin_db.updateExceptionSyncStatus(un_sync_id)
       sync_failed = True
   if sync_failed:
