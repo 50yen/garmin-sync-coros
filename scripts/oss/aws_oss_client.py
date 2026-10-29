@@ -10,7 +10,7 @@ from oss.sts_token_error import StsTokenError
 from utils.coros_oss_credients_utils import decode
 
 class AwsOssClient:
-  def __init__(self, bucket="eu-coros", service="aws", app_id="1660188068672619112", sign="877571111A1EE5316E4B590103D4B5B3", v=2, access_token=None):
+  def __init__(self, bucket="coros-s3", service="aws", app_id="1660188068672619112", sign="877571111A1EE5316E4B590103D4B5B3", v=2, access_token=None):
     self.bucket = bucket
     self.service = service
     self.app_id = app_id
@@ -73,7 +73,8 @@ class AwsOssClient:
             aws_access_key_id=credients_json["AccessKeyId"],
             aws_secret_access_key=credients_json["SecretAccessKey"],
             aws_session_token=credients_json["SessionToken"],
-            endpoint_url="https://s3.eu-central-1.amazonaws.com",
+            endpoint_url="https://s3.us-west-1.amazonaws.com",
+            region_name="us-west-1",
         )
 
   def multipart_upload(self, filePath, fileName):
