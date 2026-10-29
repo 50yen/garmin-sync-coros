@@ -1,5 +1,5 @@
 import os
-import sys 
+import sys
 import logging
 
 CURRENT_DIR = os.path.split(os.path.abspath(__file__))[0]  # 当前目录
@@ -41,7 +41,7 @@ if __name__ == "__main__":
       if os.getenv(k):
           v = os.getenv(k)
           SYNC_CONFIG[k] = v
-  
+
   ## db 名称
   db_name = "garmin.db"
   ## 建立DB链接
@@ -53,7 +53,7 @@ if __name__ == "__main__":
   GARMIN_PASSWORD = SYNC_CONFIG["GARMIN_PASSWORD"]
   GARMIN_AUTH_DOMAIN = SYNC_CONFIG["GARMIN_AUTH_DOMAIN"]
   GARMIN_NEWEST_NUM = SYNC_CONFIG["GARMIN_NEWEST_NUM"]
-    
+
   garminClient = GarminClient(GARMIN_EMAIL, GARMIN_PASSWORD, GARMIN_AUTH_DOMAIN, GARMIN_NEWEST_NUM)
 
   COROS_EMAIL = SYNC_CONFIG["COROS_EMAIL"]
@@ -67,13 +67,13 @@ if __name__ == "__main__":
       activity_id = activity["activityId"]
       garmin_db.saveActivity(activity_id)
 
-  
+
 
   un_sync_id_list = garmin_db.getUnSyncActivity()
   if not un_sync_id_list:
       exit()
   file_path_list = []
-  
+
   for un_sync_id in un_sync_id_list:
     try:
       file = garminClient.downloadFitActivity(un_sync_id)
@@ -87,7 +87,7 @@ if __name__ == "__main__":
       }
 
       file_path_list.append(un_sync_info)
-      
+
     except Exception:
       logger.exception("Failed to download Garmin activity %s", un_sync_id)
   sync_failed = False
