@@ -57,10 +57,14 @@ class GarminClient:
         logger.warning("Garmin is not logging in or the token has expired.")
         if self.auth_domain and str(self.auth_domain).upper() == "CN":
           self.garthClient.configure(domain="garmin.cn")
-        self.garthClient.login(self.email, self.password)
+        try:
+          self.garthClient.login(self.email, self.password)
+          logger.info("Garmin login completed successfully.")
+        except Exception:
+          logger.exception("Garmin login failed.")
+          raise
         
         # del self.garthClient.sess.headers['User-Agent']
-        del self.garthClient.client.sess.headers['User-Agent']
 
       return func(self, *args, **kwargs)
     return ware
@@ -75,11 +79,16 @@ class GarminClient:
      
 
   ## 获取运动
-  def getActivities(self, start:int, limit:int):
-     
+  def getActivities(self, start: int, limit: int):
      params = {"start": str(start), "limit": str(limit)}
-     activities =  self.connectapi(path=GARMIN_URL_DICT["garmin_connect_activities"], params=params)
-     return activities;
+     try:
+        return self.connectapi(
+            path=GARMIN_URL_DICT["garmin_connect_activities"],
+            params=params
+        )
+     except Exception:
+        logger.exception("Failed to retrieve Garmin activities.")
+        raise
 
   # ## 获取所有运动
   # def getAllActivities(self): 
@@ -101,16 +110,28 @@ class GarminClient:
   #     start += limit
 
   ## 获取所有运动
-  def getAllActivities(self): 
+  def getAllActivities(self):
     all_activities = []
     start = 0
-    while(True):
-      activities = self.getActivities(start=start, limit=100)
-      if len(activities) > 0:
-         all_activities.extend(activities)
-      else:
-         return all_activities
-      start += 100
+    limit = 100
+
+    while True:
+      activities = self.getActivities(start=start, limit=limit)
+
+      if not activities:
+        break
+
+      all_activities.extend(activities)
+      start += len(activities)
+
+      if self.newestNum > 0 and len(all_activities) >= self.newestNum:
+        all_activities = all_activities[:self.newestNum]
+        break
+
+      if len(activities) < limit:
+        break
+
+    return all_activities
 
   ## 下载原始格式的运动
   def downloadFitActivity(self, activity):

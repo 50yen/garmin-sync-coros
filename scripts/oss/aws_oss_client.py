@@ -10,11 +10,12 @@ from oss.sts_token_error import StsTokenError
 from utils.coros_oss_credients_utils import decode
 
 class AwsOssClient:
-  def __init__(self, bucket="eu-coros", service="aws", app_id="1660188068672619112", sign="877571111A1EE5316E4B590103D4B5B3", v=2):
+  def __init__(self, bucket="coros-s3", service="aws", app_id="1660188068672619112", sign="877571111A1EE5316E4B590103D4B5B3", v=2, access_token=None):
     self.bucket = bucket
     self.service = service
     self.app_id = app_id
     self.sign = sign
+    self.access_token = access_token
     self.credentials = None
     self.access_key_id = None
     self.access_key_secret = None
@@ -24,25 +25,49 @@ class AwsOssClient:
     self.initClient()
   
   def initClient(self):
-        sts_token_url = f"https://faq.coros.com/openapi/oss/sts?bucket={self.bucket}&service={self.service}&app_id={self.app_id}&sign={self.sign}&v={self.v}"
+        if not self.access_token:
+            raise StsTokenError("AWS OSS STS requires a COROS login access token")
 
-        response = self.req.request('GET', sts_token_url)
+        sts_token_url = (
+            "https://training.coros.com/api/proxy/oss/sts"
+            f"?bucket={self.bucket}&service={self.service}&v={self.v}"
+        )
 
-        sts_token_response = json.loads(response.data)
-        if sts_token_response["code"] != 200:
-            raise StsTokenError("Get AWS OSS STS Token Exception")
+        headers = {}
+        if self.access_token:
+            headers["Cookie"] = f"CPL-coros-token={self.access_token}"
+
+        response = self.req.request(
+            "GET",
+            sts_token_url,
+            headers=headers,
+        )
+
+        try:
+            sts_token_response = json.loads(response.data)
+        except (ValueError, TypeError):
+            raise StsTokenError(
+                f"AWS OSS STS returned invalid JSON (HTTP {response.status})"
+            )
+
+        if response.status != 200 or sts_token_response.get("code") != 200:
+            raise StsTokenError(
+                f"AWS OSS STS request failed (HTTP {response.status}, "
+                f"code={sts_token_response.get('code')})"
+            )
 
         credentials = sts_token_response["data"]["credentials"]
-        v = sts_token_response["data"]["v"]
+        self.v = sts_token_response["data"]["v"]
         self.credentials = credentials
-        self.v = v
         credients_json = decode(credentials)
+
         self.client = boto3.client(
             "s3",
             aws_access_key_id=credients_json["AccessKeyId"],
             aws_secret_access_key=credients_json["SecretAccessKey"],
             aws_session_token=credients_json["SessionToken"],
-            endpoint_url='https://s3.eu-central-1.amazonaws.com',
+            endpoint_url="https://s3.us-west-1.amazonaws.com",
+            region_name="us-west-1",
         )
 
   def multipart_upload(self, filePath, fileName):

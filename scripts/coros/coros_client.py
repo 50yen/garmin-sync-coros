@@ -1,12 +1,15 @@
 import urllib3
 import json
 import hashlib
+import logging
 
 import certifi
 
 
 from coros.region_config import REGIONCONFIG
 from coros.sts_config import STS_CONFIG
+
+logger = logging.getLogger(__name__)
 
 class CorosClient:
     
@@ -41,7 +44,17 @@ class CorosClient:
         login_body = json.dumps(login_data)
         response = self.req.request('POST', login_url, body=login_body, headers=headers)
 
-        login_response = json.loads(response.data)
+        if response.status != 200:
+            logger.error("COROS login failed with HTTP status %s", response.status)
+            raise RuntimeError("COROS login endpoint returned a non-200 response")
+
+        try:
+            login_response = json.loads(response.data)
+        except json.JSONDecodeError as err:
+            logger.error("COROS login returned invalid JSON (HTTP %s)", response.status)
+            raise RuntimeError("COROS login endpoint returned an invalid JSON response") from err
+
+
         login_result = login_response["result"]
         if login_result != "0000":
             raise CorosLoginError("Coros login anomaly, the reason for the anomaly is:" + login_response["message"])
@@ -73,7 +86,6 @@ class CorosClient:
           data = {"source":1,"timezone":32,"bucket":f"{bucket}","md5":f"{md5}","size":size,"object":f"{oss_object}","serviceName":f"{serviceName}","oriFileName":f"{fileName}"}
           json_data = json.dumps(data)
           json_str = str(json_data)
-          print(json_str)
           response = self.req.request(
               method = 'POST',
               url=upload_url,
@@ -81,13 +93,13 @@ class CorosClient:
               headers=headers
           )
           upload_response = json.loads(response.data)
-          print(upload_response)
           if upload_response["data"].get("status") == 2 and  upload_response["result"] == "0000":
              return True
           else:
              return False
-        except Exception as err:
-            exit() 
+        except Exception:
+            logger.exception("COROS activity upload failed.")
+            raise
 
     def getActivities(self, size:int, page:int):
         self.checkToken()
@@ -104,8 +116,9 @@ class CorosClient:
           )
           response = json.loads(response.data)
           return response
-        except Exception as err:
-            exit() 
+        except Exception:
+            logger.exception("Failed to query COROS activities.")
+            raise
      ## 获取所有运动
     def getAllActivities(self): 
       all_activities = []
