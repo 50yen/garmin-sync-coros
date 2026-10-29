@@ -59,6 +59,7 @@ class GarminClient:
           self.garthClient.configure(domain="garmin.cn")
         try:
           self.garthClient.login(self.email, self.password)
+          logger.info("Garmin login completed successfully.")
         except Exception as err:
           logger.exception(
               "Garmin login failed: %s: %s",
