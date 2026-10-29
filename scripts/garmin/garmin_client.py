@@ -61,11 +61,9 @@ class GarminClient:
           self.garthClient.login(self.email, self.password)
           logger.info("Garmin login completed successfully.")
         except Exception as err:
-          logger.exception(
-              "Garmin login failed: %s: %s",
-              type(err).__name__,
-              err,
-          )
+          import traceback
+          print(f"DEBUG: Garmin login failed: {type(err).__name__}: {err}", flush=True)
+          traceback.print_exc()
           raise
         
         # del self.garthClient.sess.headers['User-Agent']
