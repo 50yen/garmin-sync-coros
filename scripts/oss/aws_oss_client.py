@@ -43,13 +43,6 @@ class AwsOssClient:
             headers=headers,
         )
 
-        print(
-            f"DEBUG: AWS STS HTTP status={response.status}, "
-            f"content-type={response.headers.get('Content-Type')}, "
-            f"response-bytes={len(response.data)}",
-            flush=True,
-        )
-
         try:
             sts_token_response = json.loads(response.data)
         except (ValueError, TypeError):

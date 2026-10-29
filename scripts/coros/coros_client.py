@@ -1,12 +1,15 @@
 import urllib3
 import json
 import hashlib
+import logging
 
 import certifi
 
 
 from coros.region_config import REGIONCONFIG
 from coros.sts_config import STS_CONFIG
+
+logger = logging.getLogger(__name__)
 
 class CorosClient:
     
@@ -42,18 +45,14 @@ class CorosClient:
         response = self.req.request('POST', login_url, body=login_body, headers=headers)
 
         if response.status != 200:
-            print(f"COROS login HTTP status: {response.status}")
-            print(f"COROS response content-type: {response.headers.get('Content-Type')}")
-            print(f"COROS response length: {len(response.data)}")
+            logger.error("COROS login failed with HTTP status %s", response.status)
             raise RuntimeError("COROS login endpoint returned a non-200 response")
 
         try:
             login_response = json.loads(response.data)
-        except json.JSONDecodeError:
-            print(f"COROS login returned non-JSON; HTTP status: {response.status}")
-            print(f"COROS response content-type: {response.headers.get('Content-Type')}")
-            print(f"COROS response length: {len(response.data)}")
-            raise RuntimeError("COROS login endpoint returned an invalid JSON response")
+        except json.JSONDecodeError as err:
+            logger.error("COROS login returned invalid JSON (HTTP %s)", response.status)
+            raise RuntimeError("COROS login endpoint returned an invalid JSON response") from err
 
 
         login_result = login_response["result"]
@@ -87,7 +86,6 @@ class CorosClient:
           data = {"source":1,"timezone":32,"bucket":f"{bucket}","md5":f"{md5}","size":size,"object":f"{oss_object}","serviceName":f"{serviceName}","oriFileName":f"{fileName}"}
           json_data = json.dumps(data)
           json_str = str(json_data)
-          print(json_str)
           response = self.req.request(
               method = 'POST',
               url=upload_url,
@@ -95,15 +93,12 @@ class CorosClient:
               headers=headers
           )
           upload_response = json.loads(response.data)
-          print(upload_response)
           if upload_response["data"].get("status") == 2 and  upload_response["result"] == "0000":
              return True
           else:
              return False
-        except Exception as err:
-            import traceback
-            print(f"DEBUG: COROS upload failed: {type(err).__name__}: {err}", flush=True)
-            traceback.print_exc()
+        except Exception:
+            logger.exception("COROS activity upload failed.")
             raise
 
     def getActivities(self, size:int, page:int):
@@ -121,10 +116,8 @@ class CorosClient:
           )
           response = json.loads(response.data)
           return response
-        except Exception as err:
-            import traceback
-            print(f"DEBUG: COROS activity query failed: {type(err).__name__}: {err}", flush=True)
-            traceback.print_exc()
+        except Exception:
+            logger.exception("Failed to query COROS activities.")
             raise
      ## 获取所有运动
     def getAllActivities(self): 

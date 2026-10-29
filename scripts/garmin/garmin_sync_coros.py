@@ -1,5 +1,6 @@
 import os
 import sys 
+import logging
 
 CURRENT_DIR = os.path.split(os.path.abspath(__file__))[0]  # 当前目录
 config_path = CURRENT_DIR.rsplit('/', 1)[0]  # 上三级目录
@@ -13,11 +14,13 @@ from oss.ali_oss_client import AliOssClient
 from oss.aws_oss_client import AwsOssClient
 from utils.md5_utils import calculate_md5_file
 
+logger = logging.getLogger(__name__)
+
 SYNC_CONFIG = {
     'GARMIN_AUTH_DOMAIN': '',
     'GARMIN_EMAIL': '',
     'GARMIN_PASSWORD': '',
-    'GARMIN_NEWEST_NUM': 3,
+    'GARMIN_NEWEST_NUM': 10000,
     "COROS_EMAIL": '',
     "COROS_PASSWORD": '',
 }
@@ -25,7 +28,6 @@ SYNC_CONFIG = {
 
 def init(coros_db):
     ## 判断RQ数据库是否存在
-    print(os.path.join(DB_DIR, coros_db.garmin_db_name))
     if not os.path.exists(os.path.join(DB_DIR, coros_db.garmin_db_name)):
         ## 初始化建表
         coros_db.initDB()
@@ -57,12 +59,8 @@ if __name__ == "__main__":
   COROS_EMAIL = SYNC_CONFIG["COROS_EMAIL"]
   COROS_PASSWORD = SYNC_CONFIG["COROS_PASSWORD"]
   corosClient = CorosClient(COROS_EMAIL, COROS_PASSWORD)
-  print("DEBUG: Starting COROS login", flush=True)
   corosClient.login()
-  print("DEBUG: COROS login completed", flush=True)
-  print("DEBUG: Starting Garmin activity fetch", flush=True)
   all_activities = garminClient.getAllActivities()
-  print("DEBUG: Garmin activity fetch completed", flush=True)
   if all_activities == None or len(all_activities) == 0:
       exit()
   for activity in all_activities:
@@ -72,15 +70,6 @@ if __name__ == "__main__":
   
 
   un_sync_id_list = garmin_db.getUnSyncActivity()
-  if not un_sync_id_list:
-      exit()
-
-  # Keep only the 3 newest activities returned by Garmin.
-  newest_ids = [a["activityId"] for a in all_activities[:3]]
-  newest_ids_set = set(newest_ids)
-  un_sync_id_list = [activity_id for activity_id in un_sync_id_list
-                     if activity_id in newest_ids_set]
-  print(f"DEBUG: Limiting upload to {len(un_sync_id_list)} of the 3 newest Garmin activities", flush=True)
   if not un_sync_id_list:
       exit()
   file_path_list = []
@@ -99,8 +88,8 @@ if __name__ == "__main__":
 
       file_path_list.append(un_sync_info)
       
-    except Exception as err:
-      print(err)
+    except Exception:
+      logger.exception("Failed to download Garmin activity %s", un_sync_id)
   sync_failed = False
   for un_sync_info in file_path_list:
     try:
@@ -118,14 +107,8 @@ if __name__ == "__main__":
       upload_result = corosClient.uploadActivity(f"fit_zip/{corosClient.userId}/{calculate_md5_file(file_path)}.zip", calculate_md5_file(file_path), f"{un_sync_id}.zip", size)
       if upload_result:
           garmin_db.updateSyncStatus(un_sync_id)
-    except Exception as err:
-      import traceback
-      print(
-          f"DEBUG: Sync failed for activity {un_sync_id}: "
-          f"{type(err).__name__}: {err}",
-          flush=True
-      )
-      traceback.print_exc()
+    except Exception:
+      logger.exception("Sync failed for activity %s", un_sync_id)
       garmin_db.updateExceptionSyncStatus(un_sync_id)
       sync_failed = True
   if sync_failed:

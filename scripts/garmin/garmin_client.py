@@ -60,10 +60,8 @@ class GarminClient:
         try:
           self.garthClient.login(self.email, self.password)
           logger.info("Garmin login completed successfully.")
-        except Exception as err:
-          import traceback
-          print(f"DEBUG: Garmin login failed: {type(err).__name__}: {err}", flush=True)
-          traceback.print_exc()
+        except Exception:
+          logger.exception("Garmin login failed.")
           raise
         
         # del self.garthClient.sess.headers['User-Agent']
@@ -83,18 +81,13 @@ class GarminClient:
   ## 获取运动
   def getActivities(self, start: int, limit: int):
      params = {"start": str(start), "limit": str(limit)}
-     print(f"DEBUG: Garmin API request start={start}, limit={limit}", flush=True)
      try:
-        activities = self.connectapi(
+        return self.connectapi(
             path=GARMIN_URL_DICT["garmin_connect_activities"],
             params=params
         )
-        print(f"DEBUG: Garmin API response type={type(activities).__name__}, count={len(activities) if activities is not None else 'None'}", flush=True)
-        return activities
-     except Exception as err:
-        import traceback
-        print(f"DEBUG: Garmin API error: {type(err).__name__}: {err}", flush=True)
-        traceback.print_exc()
+     except Exception:
+        logger.exception("Failed to retrieve Garmin activities.")
         raise
 
   # ## 获取所有运动
@@ -118,8 +111,27 @@ class GarminClient:
 
   ## 获取所有运动
   def getAllActivities(self):
-    limit = max(1, self.newestNum)
-    return self.getActivities(start=0, limit=limit)
+    all_activities = []
+    start = 0
+    limit = 100
+
+    while True:
+      activities = self.getActivities(start=start, limit=limit)
+
+      if not activities:
+        break
+
+      all_activities.extend(activities)
+      start += len(activities)
+
+      if self.newestNum > 0 and len(all_activities) >= self.newestNum:
+        all_activities = all_activities[:self.newestNum]
+        break
+
+      if len(activities) < limit:
+        break
+
+    return all_activities
 
   ## 下载原始格式的运动
   def downloadFitActivity(self, activity):
