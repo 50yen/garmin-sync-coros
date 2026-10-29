@@ -28,6 +28,17 @@ class AwsOssClient:
 
         response = self.req.request('GET', sts_token_url)
 
+        print(
+            f"DEBUG: AWS STS HTTP status={response.status}, "
+            f"content-type={response.headers.get('Content-Type')}, "
+            f"response-bytes={len(response.data)}",
+            flush=True,
+        )
+        if response.status != 200 or not response.data:
+            print(
+                f"DEBUG: AWS STS response preview={response.data[:200]!r}",
+                flush=True,
+            )
         sts_token_response = json.loads(response.data)
         if sts_token_response["code"] != 200:
             raise StsTokenError("Get AWS OSS STS Token Exception")
